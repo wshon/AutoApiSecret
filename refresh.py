@@ -44,39 +44,48 @@ class Refresh:
 
     @property
     def access_token(self):
-        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-        data = {
-            'grant_type': 'refresh_token',
-            'refresh_token': self.refresh_token,
-            'client_id': CLIENT_ID,
-            'client_secret': CLIENT_SECRET,
-            'redirect_uri': 'http://localhost:53682/'
-        }
-        self.logger.debug(data)
         for _ in range(TRY_COUNT_MAX):
-            self.logger.info(f'request access_token')
-            rsp = req.post(LOGIN_URI, data=data, headers=headers)
-            if rsp.status_code == 200:
-                self.logger.info(f'access_token request success')
-                content = rsp.json()
-                self.logger.debug(content)
-                new_refresh_token = content['refresh_token']
-                access_token = content['access_token']
-                self.logger.debug(f'access_token: {access_token}')
-                self.logger.debug(f'refresh_token: {new_refresh_token}')
-                self.refresh_token = new_refresh_token
-                return access_token
-            else:
-                self.logger.info(f'access_token request false')
-                self.logger.error(rsp.json())
-                return None
+            headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+            data = {
+                'grant_type': 'refresh_token',
+                'refresh_token': self.refresh_token,
+                'client_id': CLIENT_ID,
+                'client_secret': CLIENT_SECRET,
+                'redirect_uri': 'http://localhost:53682/'
+            }
+            self.logger.debug(data)
+            for _ in range(TRY_COUNT_MAX):
+                self.logger.info(f'request access_token')
+                try:
+                    rsp = req.post(LOGIN_URI, data=data, headers=headers)
+                except Exception:
+                    self.logger.exception(f'access_token request error')
+                    continue
+                if rsp.status_code == 200:
+                    self.logger.info(f'access_token request success')
+                    content = rsp.json()
+                    self.logger.debug(content)
+                    new_refresh_token = content['refresh_token']
+                    access_token = content['access_token']
+                    self.logger.debug(f'access_token: {access_token}')
+                    self.logger.debug(f'refresh_token: {new_refresh_token}')
+                    self.refresh_token = new_refresh_token
+                    return access_token
+                elif rsp.status_code == 400:
+                    self.logger.info(f'access_token request false')
+                    self.logger.error(rsp.json())
+                    content = rsp.json()
+                    if content['error'] == 'invalid_grant':
+                        self.refresh_token = REFRESH_TOKEN
+                        break
+                    return None
 
     def run(self):
         headers = {
             'Authorization': self.access_token,
             'Content-Type': 'application/json'
         }
-        with open("api_list") as fp:
+        with open("api_list", encoding='UTF-8') as fp:
             for line in fp.readlines():
                 api_path = line.strip()
                 if api_path.startswith('#'):
