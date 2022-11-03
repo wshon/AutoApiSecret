@@ -1,14 +1,6 @@
-#自动调用api保活，加密版
 name: Auto Api Secret
 
 on:
-  release:
-    types: [published]
-  push:
-    tags:
-      - 'v*'
-  #  branches: 
-  #    - run
   schedule:
     - cron: '3 */3 * * *'
   watch:
@@ -18,39 +10,37 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v3
       - name: Set up Python
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v4
         with:
           python-version: 3.8
       - name: Cache pip
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
-          # This path is specific to Ubuntu
           path: ~/.cache/pip
-          # Look to see if there is a cache hit for the corresponding requirements file
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
-            ${{ runner.os }}-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install requests
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      #设置 token 缓存
-      - uses: actions/cache@v2
+      - name: Cache Token
+        uses: actions/cache@v3
         with:
           path: ${{ github.workspace }}/refresh_token.txt
           key: refresh_token
-      - name: Refresh Api #Api调用
+      - name: Refresh Api
         env:
-          CLIENT_ID: ${{ secrets.CLIENT_ID }} # client_id 提供
-          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }} # client_secret 提供
-          REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN }} # refresh_token 提供
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN }}
         run: |
           python refresh.py
-      - name: Git Commit #上传新的 refresh_token 到仓库
+      - name: Git Commit
         run: |
           git config --global user.email m@xon.one
           git config --global user.name o-bug
@@ -58,13 +48,13 @@ jobs:
           git add refresh_token.txt
           git commit -m "update new refresh_token"
       - name: GitHub Push
-        uses: ad-m/github-push-action@v0.6.0
+        uses: ad-m/github-push-action@master
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }} # github_token 提供
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: refresh_token
           force: true
-      - name: Upload pytest test results
-        uses: actions/upload-artifact@v2
+      - name: Upload Token
+        uses: actions/upload-artifact@v3
         with:
           name: refresh_token
           path: ${{ github.workspace }}/refresh_token.txt
