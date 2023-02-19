@@ -6,10 +6,12 @@ import urllib.request
 
 from api_list import API_LIST
 
+CURRENT_PATH = os.path.split(os.path.realpath(__file__))[0]
+
 REQUEST_COUNT_MAX = 3
 
 # Cache
-REFRESH_TOKEN_PATH = sys.path[0] + r'/refresh_token.txt'
+REFRESH_TOKEN_PATH = CURRENT_PATH + r'/refresh_token.txt'
 
 # Env
 CLIENT_ID = os.getenv('CLIENT_ID')
