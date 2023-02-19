@@ -39,7 +39,10 @@ jobs:
           CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
           REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN }}
         run: |
+          pwd
+          ls -la
           python refresh.py
+          ls -la
       - name: Git Commit
         run: |
           git config --global user.email m@xon.one
